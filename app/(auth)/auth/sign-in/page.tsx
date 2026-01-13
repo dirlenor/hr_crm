@@ -40,7 +40,7 @@ export default function SignInPage() {
     setError(null)
 
     const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'line',
+      provider: 'line' as any,
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
       },
