@@ -39,11 +39,10 @@ export async function createDepartment(data: Omit<DepartmentInsert, 'org_id'>) {
     return { error: 'Failed to create department' }
   }
 
-  // Revalidate all related paths
-  revalidatePath('/admin/departments', 'page')
-  revalidatePath('/admin/employees/new', 'page')
-  revalidatePath('/admin/departments/new', 'page')
-  revalidatePath('/admin/departments', 'layout')
+  // Revalidate all related paths to ensure fresh data
+  revalidatePath('/admin/departments')
+  revalidatePath('/admin/employees/new')
+  revalidatePath('/admin/departments/new')
   
   return { data: department }
 }
