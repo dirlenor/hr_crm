@@ -35,8 +35,10 @@ export function CreateDepartmentForm() {
         return
       }
 
-      // Redirect to departments list
+      // Redirect and force refresh
       router.push('/admin/departments')
+      // Use startTransition to ensure cache is cleared
+      await new Promise(resolve => setTimeout(resolve, 50))
       router.refresh()
     } catch (err: any) {
       setError(err.message || 'เกิดข้อผิดพลาด')
