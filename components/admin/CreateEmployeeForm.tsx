@@ -327,13 +327,13 @@ export function CreateEmployeeForm({
               <div className="space-y-2">
                 <Label htmlFor="department_id">แผนก</Label>
                 <div className="flex gap-2">
-                  <Select
-                    value={formData.department_id}
-                    onValueChange={(value) => {
-                      setFormData({ ...formData, department_id: value, position_id: '' })
-                    }}
-                    className="flex-1"
-                  >
+                  <div className="flex-1">
+                    <Select
+                      value={formData.department_id}
+                      onValueChange={(value) => {
+                        setFormData({ ...formData, department_id: value, position_id: '' })
+                      }}
+                    >
                     <SelectTrigger>
                       <SelectValue placeholder="เลือกแผนก" />
                     </SelectTrigger>
@@ -344,7 +344,8 @@ export function CreateEmployeeForm({
                         </SelectItem>
                       ))}
                     </SelectContent>
-                  </Select>
+                    </Select>
+                  </div>
                   <Button
                     type="button"
                     variant="outline"
@@ -360,12 +361,12 @@ export function CreateEmployeeForm({
               <div className="space-y-2">
                 <Label htmlFor="position_id">ตำแหน่ง</Label>
                 <div className="flex gap-2">
-                  <Select
-                    value={formData.position_id}
-                    onValueChange={(value) => setFormData({ ...formData, position_id: value })}
-                    disabled={!formData.department_id}
-                    className="flex-1"
-                  >
+                  <div className="flex-1">
+                    <Select
+                      value={formData.position_id}
+                      onValueChange={(value) => setFormData({ ...formData, position_id: value })}
+                      disabled={!formData.department_id}
+                    >
                     <SelectTrigger>
                       <SelectValue placeholder={formData.department_id ? "เลือกตำแหน่ง" : "เลือกแผนกก่อน"} />
                     </SelectTrigger>
@@ -376,7 +377,8 @@ export function CreateEmployeeForm({
                         </SelectItem>
                       ))}
                     </SelectContent>
-                  </Select>
+                    </Select>
+                  </div>
                   <Button
                     type="button"
                     variant="outline"

@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
           getAll() {
             return request.cookies.getAll()
           },
-          setAll(cookiesToSet) {
+          setAll(cookiesToSet: Array<{ name: string; value: string; options?: any }>) {
             cookiesToSet.forEach(({ name, value, options }) =>
               request.cookies.set(name, value)
             )
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     // Fallback to cookies if token auth failed
     if (!user) {
       const {
-        data: { user: cookieUser, session: cookieSession },
+        data: { user: cookieUser },
         error: authError,
       } = await supabase.auth.getUser()
 
@@ -76,6 +76,7 @@ export async function POST(request: NextRequest) {
       }
       
       user = cookieUser
+      const { data: { session: cookieSession } } = await supabase.auth.getSession()
       session = cookieSession
     }
     

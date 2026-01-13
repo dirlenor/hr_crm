@@ -74,7 +74,7 @@ export default function LiffOnboardingPage() {
     setLoading(true)
     try {
       const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'line',
+        provider: 'line' as any,
         options: {
           redirectTo: `${window.location.origin}/liff/onboarding?code=${inviteCode || searchParams.get('code') || ''}`,
         },
