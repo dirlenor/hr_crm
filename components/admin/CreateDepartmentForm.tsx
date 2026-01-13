@@ -35,9 +35,10 @@ export function CreateDepartmentForm() {
         return
       }
 
-      // Redirect to departments list and force refresh
-      // Using window.location to ensure full page reload and fresh data
-      window.location.href = '/admin/departments'
+      // Success - redirect with cache busting
+      // Add timestamp to force fresh data fetch
+      const timestamp = new Date().getTime()
+      window.location.href = `/admin/departments?t=${timestamp}`
     } catch (err: any) {
       setError(err.message || 'เกิดข้อผิดพลาด')
       setLoading(false)

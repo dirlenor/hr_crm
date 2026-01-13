@@ -20,11 +20,16 @@ export default async function DepartmentsPage() {
   }
 
   // Get departments with employee count
-  const { data: departments } = await supabase
+  const { data: departments, error: deptError } = await supabase
     .from('departments')
     .select('*, employees(id)')
     .eq('org_id', orgId)
     .order('name')
+
+  // Log error if any (for debugging)
+  if (deptError) {
+    console.error('Error fetching departments:', deptError)
+  }
 
   return (
     <div className="space-y-6">
@@ -40,6 +45,14 @@ export default async function DepartmentsPage() {
           </Button>
         </Link>
       </div>
+
+      {deptError && (
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-red-600">เกิดข้อผิดพลาด: {deptError.message}</p>
+          </CardContent>
+        </Card>
+      )}
 
       {departments && departments.length > 0 ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
