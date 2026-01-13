@@ -35,11 +35,9 @@ export function CreateDepartmentForm() {
         return
       }
 
-      // Redirect and force refresh
-      router.push('/admin/departments')
-      // Use startTransition to ensure cache is cleared
-      await new Promise(resolve => setTimeout(resolve, 50))
-      router.refresh()
+      // Redirect to departments list and force refresh
+      // Using window.location to ensure full page reload and fresh data
+      window.location.href = '/admin/departments'
     } catch (err: any) {
       setError(err.message || 'เกิดข้อผิดพลาด')
       setLoading(false)
