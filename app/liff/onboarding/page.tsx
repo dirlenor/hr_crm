@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Loader2, CheckCircle, AlertCircle, User, Building2 } from 'lucide-react'
 import { getEmployeeByInviteCode, linkEmployeeWithLine } from '@/actions/employees'
 
-export default function LiffOnboardingPage() {
+function LiffOnboardingContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const supabase = createClient()
@@ -317,5 +317,20 @@ export default function LiffOnboardingPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function LiffOnboardingPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="text-center">
+          <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
+          <p className="mt-4 text-muted-foreground">กำลังโหลด...</p>
+        </div>
+      </div>
+    }>
+      <LiffOnboardingContent />
+    </Suspense>
   )
 }
