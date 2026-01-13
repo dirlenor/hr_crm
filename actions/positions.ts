@@ -39,10 +39,6 @@ export async function createPosition(data: Omit<PositionInsert, 'org_id'>) {
     return { error: 'Failed to create position' }
   }
 
-  if (error) {
-    return { error: error.message }
-  }
-
   revalidatePath('/admin/positions')
   return { data: position }
 }
