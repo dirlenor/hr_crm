@@ -74,9 +74,9 @@ export default async function DashboardPage() {
 
   const totalEmployees = employeesResult.count || 0
   const totalDepartments = departmentsResult.data?.length || 0
-  const attendanceToday = attendanceTodayResult.data || []
-  const clockedInToday = attendanceToday.filter(a => a.status === 'present' || a.status === 'late').length
-  const lateToday = attendanceToday.filter(a => a.status === 'late').length
+  const attendanceToday = (attendanceTodayResult.data || []) as Array<{ status?: string }>
+  const clockedInToday = attendanceToday.filter((a: any) => a.status === 'present' || a.status === 'late').length
+  const lateToday = attendanceToday.filter((a: any) => a.status === 'late').length
   const pendingLeaves = pendingLeavesResult.data || []
   const pendingLeavesCount = pendingLeavesResult.count || 0
   const pendingOT = pendingOTResult.data || []
