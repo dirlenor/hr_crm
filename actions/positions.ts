@@ -40,6 +40,7 @@ export async function createPosition(data: Omit<PositionInsert, 'org_id'>) {
   }
 
   revalidatePath('/admin/positions')
+  revalidatePath('/admin/employees/new')
   return { data: position }
 }
 

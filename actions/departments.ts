@@ -40,6 +40,8 @@ export async function createDepartment(data: Omit<DepartmentInsert, 'org_id'>) {
   }
 
   revalidatePath('/admin/departments')
+  revalidatePath('/admin/employees/new')
+  revalidatePath('/admin/departments/new')
   return { data: department }
 }
 

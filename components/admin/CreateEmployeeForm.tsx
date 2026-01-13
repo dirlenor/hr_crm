@@ -113,6 +113,9 @@ export function CreateEmployeeForm({
       setNewDeptName('')
       setNewDeptDescription('')
       setError(null) // Clear error on success
+      
+      // Refresh the page to ensure departments are synced
+      router.refresh()
     } catch (err: any) {
       setError(err.message || 'เกิดข้อผิดพลาด')
     } finally {
@@ -159,6 +162,9 @@ export function CreateEmployeeForm({
       setNewPosName('')
       setNewPosLevel('3')
       setError(null) // Clear error on success
+      
+      // Refresh the page to ensure positions are synced
+      router.refresh()
     } catch (err: any) {
       setError(err.message || 'เกิดข้อผิดพลาด')
     } finally {
