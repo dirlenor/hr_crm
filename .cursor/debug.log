@@ -1,0 +1,8 @@
+{"location":"actions/employees.ts:14","message":"createEmployee entry","data":{"hasData":true,"firstName":"เเเกดเ"},"timestamp":1768277253443,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"actions/employees.ts:18","message":"After createClient","data":{"hasUser":true,"userId":"f9c401a7-a581-41d3-8fe1-1fed6af612b9","hasSession":true},"timestamp":1768277253657,"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}
+{"location":"actions/employees.ts:40","message":"Before get_user_org_id RPC","data":{"userId":"f9c401a7-a581-41d3-8fe1-1fed6af612b9"},"timestamp":1768277253658,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"actions/employees.ts:47","message":"After get_user_org_id RPC","data":{"hasOrgId":true,"hasError":false},"timestamp":1768277253876,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"actions/employees.ts:42","message":"Before permission check","data":{"userId":"f9c401a7-a581-41d3-8fe1-1fed6af612b9"},"timestamp":1768277253876,"sessionId":"debug-session","runId":"run1","hypothesisId":"D"}
+{"location":"actions/employees.ts:50","message":"After permission check","data":{"hasPermission":true},"timestamp":1768277254137,"sessionId":"debug-session","runId":"run1","hypothesisId":"D"}
+{"location":"actions/employees.ts:81","message":"Before create_employee RPC","data":{"userId":"f9c401a7-a581-41d3-8fe1-1fed6af612b9","firstName":"เเเกดเ"},"timestamp":1768277254138,"sessionId":"debug-session","runId":"run1","hypothesisId":"F"}
+{"location":"actions/employees.ts:98","message":"After create_employee RPC","data":{"hasEmployee":true,"hasError":false},"timestamp":1768277254363,"sessionId":"debug-session","runId":"run1","hypothesisId":"F"}
