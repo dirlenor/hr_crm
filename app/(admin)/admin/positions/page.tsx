@@ -19,20 +19,22 @@ export default async function PositionsPage() {
     return null
   }
 
-  const { data: orgId } = await supabase.rpc('get_user_org_id', {
-    user_id: user.id,
+  // Use RPC function to get positions (bypasses RLS issues)
+  const { data: positionsData, error: positionsError } = await supabase.rpc('get_positions', {
+    p_user_id: user.id,
   })
 
-  if (!orgId) {
-    return null
+  if (positionsError) {
+    console.error('Error fetching positions:', positionsError)
   }
 
-  const { data: positions } = await supabase
-    .from('positions')
-    .select('*, departments(name), salary_structures(*), employees(id)')
-    .eq('org_id', orgId)
-    .order('departments(name)', { ascending: true })
-    .order('level', { ascending: false })
+  // Transform RPC result to match expected format
+  const positions = (positionsData || []).map((pos: any) => ({
+    ...pos,
+    departments: pos.department_name ? { name: pos.department_name } : null,
+    salary_structures: pos.salary_structure || null,
+    employees: Array(pos.employee_count || 0).fill({ id: null }), // Mock array for count
+  }))
 
   return (
     <div className="space-y-6">

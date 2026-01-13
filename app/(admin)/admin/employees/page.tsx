@@ -25,33 +25,46 @@ export default async function EmployeesPage({
     return null
   }
 
+  // Get org_id first
   const { data: orgId } = await supabase.rpc('get_user_org_id', {
     user_id: user.id,
   })
 
   if (!orgId) {
-    return null
+    return (
+      <div className="space-y-6">
+        <div className="page-header mb-0">
+          <h1 className="page-title">พนักงาน</h1>
+          <p className="page-description">กรุณาสร้างองค์กรก่อน</p>
+        </div>
+      </div>
+    )
   }
 
-  let query = supabase
-    .from('employees')
-    .select('*, departments(name), positions(name)')
-    .eq('org_id', orgId)
-    .order('created_at', { ascending: false })
+  // Use RPC function directly (bypasses RLS issues with setSession)
+  const { data: rpcEmployees, error: rpcError } = await supabase.rpc('get_employees', {
+    p_user_id: user.id,
+    p_status: searchParams.status || null,
+    p_search: searchParams.search || null,
+  })
 
-  if (searchParams.search) {
-    query = query.or(`first_name.ilike.%${searchParams.search}%,last_name.ilike.%${searchParams.search}%,employee_code.ilike.%${searchParams.search}%`)
+  let finalEmployees: any[] = []
+  let finalError: any = null
+
+  if (rpcError) {
+    finalError = rpcError
+  } else if (rpcEmployees) {
+    // Transform RPC result to match expected format
+    finalEmployees = rpcEmployees.map((emp: any) => ({
+      ...emp,
+      departments: emp.department_name ? { name: emp.department_name } : null,
+      positions: emp.position_name ? { name: emp.position_name } : null,
+    }))
   }
-
-  if (searchParams.status) {
-    query = query.eq('status', searchParams.status)
-  }
-
-  const { data: employees, count } = await query
 
   // Stats
-  const activeCount = employees?.filter(e => e.status === 'active').length || 0
-  const totalCount = employees?.length || 0
+  const activeCount = finalEmployees?.filter(e => e.status === 'active').length || 0
+  const totalCount = finalEmployees?.length || 0
 
   return (
     <div className="space-y-6">
@@ -68,6 +81,16 @@ export default async function EmployeesPage({
           </Button>
         </Link>
       </div>
+
+      {/* Error Display */}
+      {finalError && (
+        <div className="rounded-lg border border-danger bg-danger-50 p-4">
+          <p className="text-sm text-danger-600">
+            เกิดข้อผิดพลาดในการโหลดข้อมูล: {finalError.message || JSON.stringify(finalError)}
+          </p>
+        </div>
+      )}
+
 
       {/* Filters */}
       <div className="flex flex-col gap-3 rounded-lg border bg-card p-4 md:flex-row md:items-center">
@@ -138,75 +161,83 @@ export default async function EmployeesPage({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {employees && employees.length > 0 ? (
-              employees.map((emp: any) => (
-                <TableRow key={emp.id} className="group">
+            {finalEmployees && finalEmployees.length > 0 ? (
+              finalEmployees.map((emp: any) => {
+                // Ensure employee has the correct format
+                const employee = {
+                  ...emp,
+                  departments: emp.departments || (emp.department_name ? { name: emp.department_name } : null),
+                  positions: emp.positions || (emp.position_name ? { name: emp.position_name } : null),
+                }
+                return (
+                <TableRow key={employee.id} className="group">
                   <TableCell className="font-mono text-sm text-muted-foreground">
-                    {emp.employee_code || '-'}
+                    {employee.employee_code || '-'}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div className="avatar avatar-sm avatar-primary">
-                        {emp.first_name[0]}{emp.last_name[0]}
+                        {employee.first_name[0]}{employee.last_name[0]}
                       </div>
                       <div>
                         <Link
-                          href={`/admin/employees/${emp.id}`}
+                          href={`/admin/employees/${employee.id}`}
                           className="font-medium hover:text-primary hover:underline"
                         >
-                          {emp.first_name} {emp.last_name}
+                          {employee.first_name} {employee.last_name}
                         </Link>
-                        {emp.nickname && (
-                          <span className="text-muted-foreground"> ({emp.nickname})</span>
+                        {employee.nickname && (
+                          <span className="text-muted-foreground"> ({employee.nickname})</span>
                         )}
-                        {emp.email && (
-                          <p className="text-xs text-muted-foreground">{emp.email}</p>
+                        {employee.email && (
+                          <p className="text-xs text-muted-foreground">{employee.email}</p>
                         )}
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>
                     <span className="badge-neutral">
-                      {emp.departments?.name || '-'}
+                      {employee.departments?.name || employee.department_name || '-'}
                     </span>
                   </TableCell>
-                  <TableCell>{emp.positions?.name || '-'}</TableCell>
+                  <TableCell>{employee.positions?.name || employee.position_name || '-'}</TableCell>
                   <TableCell>
                     <span className="text-sm text-muted-foreground">
-                      {emp.employment_type === 'full-time' && 'พนักงานประจำ'}
-                      {emp.employment_type === 'part-time' && 'พาร์ทไทม์'}
-                      {emp.employment_type === 'contract' && 'สัญญาจ้าง'}
-                      {emp.employment_type === 'intern' && 'ฝึกงาน'}
+                      {employee.employment_type === 'full-time' && 'พนักงานประจำ'}
+                      {employee.employment_type === 'part-time' && 'พาร์ทไทม์'}
+                      {employee.employment_type === 'contract' && 'สัญญาจ้าง'}
+                      {employee.employment_type === 'intern' && 'ฝึกงาน'}
                     </span>
                   </TableCell>
                   <TableCell>
-                    {emp.status === 'active' && <span className="badge-success">ทำงานอยู่</span>}
-                    {emp.status === 'pending' && (
+                    {employee.status === 'active' && <span className="badge-success">ทำงานอยู่</span>}
+                    {employee.status === 'pending' && (
                       <div className="flex flex-col gap-1">
                         <span className="badge-warning">รอลงทะเบียน</span>
-                        {emp.invite_code && (
+                        {employee.invite_code && (
                           <span className="text-xs text-muted-foreground font-mono">
-                            {emp.invite_code}
+                            {employee.invite_code}
                           </span>
                         )}
                       </div>
                     )}
-                    {emp.status === 'resigned' && <span className="badge-neutral">ลาออก</span>}
-                    {emp.status === 'terminated' && <span className="badge-danger">เลิกจ้าง</span>}
-                    {emp.status === 'on-leave' && <span className="badge-warning">ลาพัก</span>}
+                    {employee.status === 'resigned' && <span className="badge-neutral">ลาออก</span>}
+                    {employee.status === 'terminated' && <span className="badge-danger">เลิกจ้าง</span>}
+                    {employee.status === 'on-leave' && <span className="badge-warning">ลาพัก</span>}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {format(new Date(emp.start_date), 'd MMM yyyy', { locale: th })}
+                    {employee.start_date ? format(new Date(employee.start_date), 'd MMM yyyy', { locale: th }) : '-'}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Link href={`/admin/employees/${emp.id}`}>
+                    <Link href={`/admin/employees/${employee.id}`}>
                       <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100">
                         ดูข้อมูล
                       </Button>
                     </Link>
                   </TableCell>
                 </TableRow>
-              ))
+                )
+              })
             ) : (
               <TableRow>
                 <TableCell colSpan={8}>

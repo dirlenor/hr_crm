@@ -31,6 +31,9 @@ export default async function EmployeeDetailPage({
     redirect('/admin/employees')
   }
 
+  // Ensure session is set for RLS
+  await supabase.auth.getSession()
+
   // Get employee with relations
   const { data: employee } = await supabase
     .from('employees')

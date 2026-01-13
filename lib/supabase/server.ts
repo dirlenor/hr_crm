@@ -8,12 +8,15 @@ type CreateClientResult = {
   session: Session | null
 }
 
+/**
+ * Create Supabase client with proper authentication for RLS
+ * WORKAROUND: @supabase/ssr v0.1.0 doesn't parse cookie properly,
+ * so we manually parse and set session from auth cookie
+ */
 export async function createClient(): Promise<CreateClientResult> {
   const cookieStore = await cookies()
-  
-  // Find auth cookie
   const allCookies = cookieStore.getAll()
-  const authCookie = allCookies.find(c => c.name.includes('supabase') || c.name.includes('auth'))
+  const authCookies = allCookies.filter(c => c.name.includes('auth-token'))
 
   const client = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -38,44 +41,39 @@ export async function createClient(): Promise<CreateClientResult> {
     }
   )
   
-  // Get user and session
-  // Try getSession first (more reliable)
-  const { data: { session }, error: sessionError } = await client.auth.getSession()
+  // WORKAROUND: @supabase/ssr v0.1.0 doesn't parse cookie properly
+  // Manually parse and set session from auth cookie
+  const authCookieForSession = authCookies[0]
+  let session: Session | null = null
   
-  let user: User | null = null
-  
-  if (session?.user) {
-    user = session.user
-  } else {
-    // Fallback: try getUser
-    const { data: { user: fetchedUser }, error: userError } = await client.auth.getUser()
-    user = fetchedUser
-  }
-  
-  // If still no user, try manual cookie parsing as fallback
-  if (!user && authCookie?.value) {
+  if (authCookieForSession?.value) {
     try {
-      let cookieValue = authCookie.value
-      if (cookieValue.includes('%')) {
-        cookieValue = decodeURIComponent(cookieValue)
-      }
-      
-      const sessionData = JSON.parse(cookieValue)
-      
+      const sessionData = JSON.parse(authCookieForSession.value)
       if (sessionData.access_token && sessionData.refresh_token) {
-        const { data: setSessionData, error: setSessionError } = await client.auth.setSession({
+        // Set session manually
+        const { data, error } = await client.auth.setSession({
           access_token: sessionData.access_token,
           refresh_token: sessionData.refresh_token,
         })
-        
-        user = setSessionData.user
-        if (setSessionData.session) {
-          return { supabase: client, user, session: setSessionData.session }
-        }
+        session = data.session
       }
-    } catch (parseError: any) {
-      // Cookie parse error - ignore
+    } catch {
+      // Failed to parse cookie, try fallback
     }
+  }
+  
+  // Fallback to getSession if manual parsing failed
+  if (!session) {
+    const { data: { session: fallbackSession } } = await client.auth.getSession()
+    session = fallbackSession
+  }
+  
+  let user: User | null = session?.user || null
+  
+  // If no session, try getUser (this also sets the JWT in context)
+  if (!user) {
+    const { data: { user: fetchedUser } } = await client.auth.getUser()
+    user = fetchedUser
   }
   
   return { supabase: client, user, session }

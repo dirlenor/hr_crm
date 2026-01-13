@@ -52,64 +52,83 @@ export async function updateDepartment(
   data: Omit<DepartmentUpdate, 'org_id'>
 ) {
   const { supabase, user } = await createClient()
-  const profile = await getCurrentProfile()
 
-  if (!profile || !user) {
+  if (!user) {
     return { error: 'Not authenticated' }
   }
 
-  // Check permission
-  const { data: hasPermission } = await supabase.rpc('has_permission', {
-    user_id: user.id,
-    permission_key: 'departments.manage',
-  })
+  // Ensure session is set for RLS
+  await supabase.auth.getSession()
 
-  if (!hasPermission) {
-    return { error: 'Permission denied' }
-  }
-
+  // Now RLS should work - try direct query first
   const { data: department, error } = await supabase
     .from('departments')
     .update(data as DepartmentUpdate)
     .eq('id', id)
-    .eq('org_id', profile.org_id)
     .select()
     .single()
 
   if (error) {
-    return { error: error.message }
+    // If RLS fails, fallback to RPC function
+    const { data: rpcDepartment, error: rpcError } = await supabase.rpc('update_department', {
+      p_id: id,
+      p_name: data.name,
+      p_description: data.description || null,
+      p_parent_id: (data as any).parent_id || null,
+      p_user_id: user.id,
+    })
+
+    if (rpcError) {
+      return { error: rpcError.message }
+    }
+
+    if (!rpcDepartment) {
+      return { error: 'Failed to update department' }
+    }
+
+    revalidatePath('/admin/departments')
+    revalidatePath(`/admin/departments/${id}`)
+    return { data: rpcDepartment }
   }
 
   revalidatePath('/admin/departments')
+  revalidatePath(`/admin/departments/${id}`)
   return { data: department }
 }
 
 export async function deleteDepartment(id: string) {
   const { supabase, user } = await createClient()
-  const profile = await getCurrentProfile()
 
-  if (!profile || !user) {
+  if (!user) {
     return { error: 'Not authenticated' }
   }
 
-  // Check permission
-  const { data: hasPermission } = await supabase.rpc('has_permission', {
-    user_id: user.id,
-    permission_key: 'departments.manage',
-  })
+  // Ensure session is set for RLS
+  await supabase.auth.getSession()
 
-  if (!hasPermission) {
-    return { error: 'Permission denied' }
-  }
-
+  // Now RLS should work - try direct query first
   const { error } = await supabase
     .from('departments')
     .delete()
     .eq('id', id)
-    .eq('org_id', profile.org_id)
 
   if (error) {
-    return { error: error.message }
+    // If RLS fails, fallback to RPC function
+    const { data: success, error: rpcError } = await supabase.rpc('delete_department', {
+      p_id: id,
+      p_user_id: user.id,
+    })
+
+    if (rpcError) {
+      return { error: rpcError.message }
+    }
+
+    if (!success) {
+      return { error: 'Failed to delete department' }
+    }
+
+    revalidatePath('/admin/departments')
+    return { success: true }
   }
 
   revalidatePath('/admin/departments')

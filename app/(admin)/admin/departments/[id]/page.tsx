@@ -31,13 +31,18 @@ export default async function DepartmentDetailPage({
     redirect('/admin/departments')
   }
 
-  // Get department
-  const { data: department } = await supabase
-    .from('departments')
-    .select('*')
-    .eq('id', params.id)
-    .eq('org_id', orgId)
-    .single()
+  // Get department using RPC function (bypasses RLS issues)
+  // First get all departments and filter by id
+  const { data: departments, error: deptError } = await supabase.rpc('get_departments', {
+    p_user_id: user.id,
+  })
+
+  if (deptError) {
+    console.error('Error fetching departments:', deptError)
+    notFound()
+  }
+
+  const department = departments?.find((d: any) => d.id === params.id)
 
   if (!department) {
     notFound()

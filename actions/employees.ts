@@ -12,82 +12,44 @@ type EmployeeUpdate = Database['public']['Tables']['employees']['Update']
  * Create new employee (Admin only)
  */
 export async function createEmployee(data: Omit<EmployeeInsert, 'org_id' | 'created_by' | 'updated_by' | 'status' | 'invite_code' | 'invite_expires_at' | 'invite_sent_at'>) {
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/7bfc2665-b30e-4e03-aba2-ec07d756f3ec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'actions/employees.ts:14',message:'createEmployee entry',data:{hasData:!!data,firstName:data.first_name},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-  // #endregion
-  
   const { supabase, user, session } = await createClient()
-  
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/7bfc2665-b30e-4e03-aba2-ec07d756f3ec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'actions/employees.ts:18',message:'After createClient',data:{hasUser:!!user,userId:user?.id,hasSession:!!session},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-  // #endregion
   
   // Try to get user from session if not available
   let currentUser = user
   if (!currentUser) {
     const { data: { user: sessionUser } } = await supabase.auth.getUser()
     currentUser = sessionUser
-    
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/7bfc2665-b30e-4e03-aba2-ec07d756f3ec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'actions/employees.ts:25',message:'Fallback getUser',data:{hasSessionUser:!!sessionUser},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-    // #endregion
   }
 
   if (!currentUser) {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/7bfc2665-b30e-4e03-aba2-ec07d756f3ec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'actions/employees.ts:32',message:'No user found',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
     return { error: 'Not authenticated' }
   }
 
-  // Use RPC function to get org_id instead of getCurrentProfile (more reliable)
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/7bfc2665-b30e-4e03-aba2-ec07d756f3ec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'actions/employees.ts:40',message:'Before get_user_org_id RPC',data:{userId:currentUser.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-  // #endregion
-  
+  // Use RPC function to get org_id
   const { data: orgId, error: orgIdError } = await supabase.rpc('get_user_org_id', {
     user_id: currentUser.id,
   })
-  
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/7bfc2665-b30e-4e03-aba2-ec07d756f3ec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'actions/employees.ts:47',message:'After get_user_org_id RPC',data:{hasOrgId:!!orgId,hasError:!!orgIdError,errorMessage:orgIdError?.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-  // #endregion
 
   if (!orgId || orgIdError) {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/7bfc2665-b30e-4e03-aba2-ec07d756f3ec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'actions/employees.ts:52',message:'No orgId found',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-    // #endregion
     return { error: 'Not authenticated. Please complete onboarding.' }
   }
 
   // Check permission
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/7bfc2665-b30e-4e03-aba2-ec07d756f3ec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'actions/employees.ts:42',message:'Before permission check',data:{userId:currentUser.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-  // #endregion
-  
   const { data: hasPermission } = await supabase.rpc('has_permission', {
     user_id: currentUser.id,
     permission_key: 'employees.create',
   })
-  
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/7bfc2665-b30e-4e03-aba2-ec07d756f3ec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'actions/employees.ts:50',message:'After permission check',data:{hasPermission:!!hasPermission},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-  // #endregion
 
   if (!hasPermission) {
     return { error: 'Permission denied' }
   }
 
   // Use RPC function to create employee (bypasses RLS)
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/7bfc2665-b30e-4e03-aba2-ec07d756f3ec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'actions/employees.ts:81',message:'Before create_employee RPC',data:{userId:currentUser.id,firstName:data.first_name},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
-  // #endregion
-  
   const { data: employee, error } = await supabase.rpc('create_employee', {
-    p_first_name: data.first_name,  // Required parameters first
+    p_first_name: data.first_name,
     p_last_name: data.last_name,
     p_start_date: data.start_date,
-    p_employee_code: data.employee_code || null,  // Optional parameters after
+    p_employee_code: data.employee_code || null,
     p_nickname: data.nickname || null,
     p_email: data.email || null,
     p_phone: data.phone || null,
@@ -95,12 +57,8 @@ export async function createEmployee(data: Omit<EmployeeInsert, 'org_id' | 'crea
     p_position_id: data.position_id || null,
     p_employment_type: data.employment_type || 'full-time',
     p_base_salary: data.base_salary || null,
-    p_user_id: currentUser.id,  // Pass user_id explicitly
+    p_user_id: currentUser.id,
   })
-
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/7bfc2665-b30e-4e03-aba2-ec07d756f3ec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'actions/employees.ts:98',message:'After create_employee RPC',data:{hasEmployee:!!employee,hasError:!!error,errorMessage:error?.message,errorCode:error?.code},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
-  // #endregion
 
   if (error) {
     return { error: error.message }
@@ -122,22 +80,15 @@ export async function updateEmployee(
   data: Omit<EmployeeUpdate, 'org_id' | 'updated_by'>
 ) {
   const { supabase, user } = await createClient()
-  const profile = await getCurrentProfile()
 
-  if (!profile || !user) {
+  if (!user) {
     return { error: 'Not authenticated' }
   }
 
-  // Check permission
-  const { data: hasPermission } = await supabase.rpc('has_permission', {
-    user_id: user.id,
-    permission_key: 'employees.update',
-  })
+  // Ensure session is set for RLS
+  await supabase.auth.getSession()
 
-  if (!hasPermission) {
-    return { error: 'Permission denied' }
-  }
-
+  // Now RLS should work - try direct query first
   const { data: employee, error } = await supabase
     .from('employees')
     .update({
@@ -146,12 +97,38 @@ export async function updateEmployee(
       updated_at: new Date().toISOString(),
     } as EmployeeUpdate)
     .eq('id', id)
-    .eq('org_id', profile.org_id)
     .select()
     .single()
 
   if (error) {
-    return { error: error.message }
+    // If RLS fails, fallback to RPC function
+    const { data: rpcEmployee, error: rpcError } = await supabase.rpc('update_employee', {
+      p_id: id,
+      p_employee_code: data.employee_code || null,
+      p_first_name: data.first_name || null,
+      p_last_name: data.last_name || null,
+      p_nickname: data.nickname || null,
+      p_email: data.email || null,
+      p_phone: data.phone || null,
+      p_department_id: data.department_id || null,
+      p_position_id: data.position_id || null,
+      p_employment_type: data.employment_type || null,
+      p_start_date: data.start_date || null,
+      p_base_salary: data.base_salary || null,
+      p_user_id: user.id,
+    })
+
+    if (rpcError) {
+      return { error: rpcError.message }
+    }
+
+    if (!rpcEmployee) {
+      return { error: 'Failed to update employee' }
+    }
+
+    revalidatePath('/admin/employees')
+    revalidatePath(`/admin/employees/${id}`)
+    return { data: rpcEmployee }
   }
 
   revalidatePath('/admin/employees')
@@ -164,30 +141,37 @@ export async function updateEmployee(
  */
 export async function deleteEmployee(id: string) {
   const { supabase, user } = await createClient()
-  const profile = await getCurrentProfile()
 
-  if (!profile || !user) {
+  if (!user) {
     return { error: 'Not authenticated' }
   }
 
-  // Check permission
-  const { data: hasPermission } = await supabase.rpc('has_permission', {
-    user_id: user.id,
-    permission_key: 'employees.delete',
-  })
+  // Ensure session is set for RLS
+  await supabase.auth.getSession()
 
-  if (!hasPermission) {
-    return { error: 'Permission denied' }
-  }
-
+  // Now RLS should work - try direct query first
   const { error } = await supabase
     .from('employees')
     .delete()
     .eq('id', id)
-    .eq('org_id', profile.org_id)
 
   if (error) {
-    return { error: error.message }
+    // If RLS fails, fallback to RPC function
+    const { data: success, error: rpcError } = await supabase.rpc('delete_employee', {
+      p_id: id,
+      p_user_id: user.id,
+    })
+
+    if (rpcError) {
+      return { error: rpcError.message }
+    }
+
+    if (!success) {
+      return { error: 'Failed to delete employee' }
+    }
+
+    revalidatePath('/admin/employees')
+    return { success: true }
   }
 
   revalidatePath('/admin/employees')

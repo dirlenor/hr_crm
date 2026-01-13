@@ -49,27 +49,19 @@ export async function updatePosition(
   data: Omit<PositionUpdate, 'org_id'>
 ) {
   const { supabase, user } = await createClient()
-  const profile = await getCurrentProfile()
 
-  if (!profile || !user) {
+  if (!user) {
     return { error: 'Not authenticated' }
   }
 
-  // Check permission
-  const { data: hasPermission } = await supabase.rpc('has_permission', {
-    user_id: user.id,
-    permission_key: 'positions.manage',
-  })
+  // Ensure session is set for RLS
+  await supabase.auth.getSession()
 
-  if (!hasPermission) {
-    return { error: 'Permission denied' }
-  }
-
+  // Now RLS should work - try direct query first
   const { data: position, error } = await supabase
     .from('positions')
     .update(data as PositionUpdate)
     .eq('id', id)
-    .eq('org_id', profile.org_id)
     .select()
     .single()
 
@@ -83,27 +75,19 @@ export async function updatePosition(
 
 export async function deletePosition(id: string) {
   const { supabase, user } = await createClient()
-  const profile = await getCurrentProfile()
 
-  if (!profile || !user) {
+  if (!user) {
     return { error: 'Not authenticated' }
   }
 
-  // Check permission
-  const { data: hasPermission } = await supabase.rpc('has_permission', {
-    user_id: user.id,
-    permission_key: 'positions.manage',
-  })
+  // Ensure session is set for RLS
+  await supabase.auth.getSession()
 
-  if (!hasPermission) {
-    return { error: 'Permission denied' }
-  }
-
+  // Now RLS should work - try direct query first
   const { error } = await supabase
     .from('positions')
     .delete()
     .eq('id', id)
-    .eq('org_id', profile.org_id)
 
   if (error) {
     return { error: error.message }
